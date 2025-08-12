@@ -146,7 +146,7 @@ getVerifiedHTTP2ClientWith config host port disconnected setup =
         Nothing -> cancel action $> Left (HCNetworkError NETimeoutError)
 
     client :: HClient -> TMVar (Either HTTP2ClientError HTTP2Client) -> TLS p -> H.Client HTTP2Response
-    client c cVar tls sendReq = do
+    client c cVar tls sendReq _aux = do
       sessionTs <- getCurrentTime
       let c' =
             HTTP2Client
@@ -164,10 +164,10 @@ getVerifiedHTTP2ClientWith config host port disconnected setup =
       atomically $ do
         writeTVar (connected c) True
         putTMVar cVar (Right c')
-      process c' sendReq `E.finally` disconnected
+      process c' sendReq _aux `E.finally` disconnected
 
     process :: HTTP2Client -> H.Client HTTP2Response
-    process HTTP2Client {client_ = HClient {reqQ}} sendReq = forever $ do
+    process HTTP2Client {client_ = HClient {reqQ}} sendReq _aux = forever $ do
       (req, respVar) <- atomically $ readTBQueue reqQ
       sendReq req $ \r -> do
         respBody <- getHTTP2Body r (bodyHeadSize config)
@@ -213,4 +213,5 @@ runHTTP2ClientWith :: forall a p. BufferSize -> TransportHost -> ((TLS p -> IO a
 runHTTP2ClientWith bufferSize host setup client = setup $ \tls -> withHTTP2 bufferSize (run tls) (pure ()) tls
   where
     run :: TLS p -> H.Config -> IO a
-    run tls cfg = H.run (ClientConfig "https" (strEncode host) 20) cfg $ client tls
+    cliconf = H.defaultClientConfig {scheme = "https", authority = (strEncode host)}
+    run tls cfg = H.run cliconf cfg $ client tls
