@@ -75,7 +75,7 @@ data RCErrorType
 
 instance AnyError RCErrorType where
   fromSomeException e = case fromException e of
-    Just (TLS.Terminated _ _ (TLS.Error_Protocol _ TLS.UnknownCa)) -> RCEIdentity
+    Just (TLS.Terminated _ _ (TLS.Error_Protocol (_, _, TLS.UnknownCa))) -> RCEIdentity
     _ -> RCEException $ show e
   {-# INLINE fromSomeException #-}
 
