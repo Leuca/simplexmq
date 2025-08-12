@@ -27,6 +27,7 @@ import Control.Concurrent.Async
 import Control.Exception (IOException, try)
 import qualified Control.Exception as E
 import Control.Monad
+import qualified Data.ByteString.Char8 as BS
 import Data.Functor (($>))
 import Data.Time (UTCTime, getCurrentTime)
 import qualified Data.X509 as X
@@ -213,5 +214,5 @@ runHTTP2ClientWith :: forall a p. BufferSize -> TransportHost -> ((TLS p -> IO a
 runHTTP2ClientWith bufferSize host setup client = setup $ \tls -> withHTTP2 bufferSize (run tls) (pure ()) tls
   where
     run :: TLS p -> H.Config -> IO a
-    cliconf = H.defaultClientConfig {scheme = "https", authority = (strEncode host)}
+    cliconf = H.defaultClientConfig {scheme = "https", authority = BS.unpack (strEncode host)}
     run tls cfg = H.run cliconf cfg $ client tls
